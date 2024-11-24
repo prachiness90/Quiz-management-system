@@ -1,0 +1,448 @@
+import java.util.*;
+
+public class QuizSystem {
+
+    // User class
+    static class User {
+        private String username;
+        private String password;
+        private boolean isAdmin;
+        private List<QuizAttempt> quizAttempts;
+
+        public User(String username, String password, boolean isAdmin) {
+            this.username = username;
+            this.password = password;
+            this.isAdmin = isAdmin;
+            this.quizAttempts = new ArrayList<>();
+        }
+
+        // Getters and setters
+        public String getUsername() { return username; }
+        public String getPassword() { return password; }
+        public boolean isAdmin() { return isAdmin; }
+        public List<QuizAttempt> getQuizAttempts() { return quizAttempts; }
+    }
+
+    // Question class
+    static class Question {
+        private String questionText;
+        private List<String> options;
+        private String correctAnswer;
+        private String type; // "MCQ", "TRUE_FALSE", "SHORT_ANSWER"
+        private int score;
+        private int timeLimit; // in seconds, 0 for no limit
+
+        public Question(String questionText, List<String> options, String correctAnswer, 
+                       String type, int score, int timeLimit) {
+            this.questionText = questionText;
+            this.options = options;
+            this.correctAnswer = correctAnswer;
+            this.type = type;
+            this.score = score;
+            this.timeLimit = timeLimit;
+        }
+
+        // Getters
+        public String getQuestionText() { return questionText; }
+        public List<String> getOptions() { return options; }
+        public String getCorrectAnswer() { return correctAnswer; }
+        public String getType() { return type; }
+        public int getScore() { return score; }
+        public int getTimeLimit() { return timeLimit; }
+    }
+
+    // Quiz class
+    static class Quiz {
+        private String title;
+        private String description;
+        private String instructions;
+        private List<Question> questions;
+        private boolean immediateScoring;
+
+        public Quiz(String title, String description, String instructions, boolean immediateScoring) {
+            this.title = title;
+            this.description = description;
+            this.instructions = instructions;
+            this.questions = new ArrayList<>();
+            this.immediateScoring = immediateScoring;
+        }
+
+        public void addQuestion(Question question) {
+            questions.add(question);
+        }
+
+        // Getters
+        public String getTitle() { return title; }
+        public String getDescription() { return description; }
+        public String getInstructions() { return instructions; }
+        public List<Question> getQuestions() { return questions; }
+        public boolean isImmediateScoring() { return immediateScoring; }
+    }
+
+    // QuizAttempt class
+    static class QuizAttempt {
+        private Quiz quiz;
+        private List<String> userAnswers;
+        private int score;
+        private boolean completed;
+
+        public QuizAttempt(Quiz quiz) {
+            this.quiz = quiz;
+            this.userAnswers = new ArrayList<>();
+            this.score = 0;
+            this.completed = false;
+        }
+
+        // Getters and setters
+        public Quiz getQuiz() { return quiz; }
+        public List<String> getUserAnswers() { return userAnswers; }
+        public int getScore() { return score; }
+        public boolean isCompleted() { return completed; }
+        public void setScore(int score) { this.score = score; }
+        public void setCompleted(boolean completed) { this.completed = completed; }
+    }
+
+    // Main QuizSystem class
+    private List<User> users;
+    private List<Quiz> quizzes;
+    private User currentUser;
+    private Scanner scanner;
+
+    public QuizSystem() {
+        users = new ArrayList<>();
+        quizzes = new ArrayList<>();
+        scanner = new Scanner(System.in);
+        
+        // Add default admin
+        users.add(new User("prachi", "123", true));
+    }
+
+    public void start() {
+        while (true) {
+            if (currentUser == null) {
+                showLoginMenu();
+            } else if (currentUser.isAdmin()) {
+                showAdminMenu();
+            } else {
+                showUserMenu();
+            }
+        }
+    }
+
+    private void showLoginMenu() {
+        System.out.println("\n=== Quiz Management System ===");
+        System.out.println("1. Login");
+        System.out.println("2. Register");
+        System.out.println("3. Exit");
+        System.out.print("Choose an option: ");
+
+        int choice = scanner.nextInt();
+        scanner.nextLine(); // Consume newline
+
+        switch (choice) {
+            case 1:
+                login();
+                break;
+            case 2:
+                register();
+                break;
+            case 3:
+                System.exit(0);
+            default:
+                System.out.println("Invalid option!");
+        }
+    }
+
+    private void showAdminMenu() {
+        System.out.println("\n=== Admin Menu ===");
+        System.out.println("1. Create Quiz");
+        System.out.println("2. View All Quizzes");
+        System.out.println("3. Add Question to Quiz");
+        System.out.println("4. View Quiz Results");
+        System.out.println("5. Logout");
+        System.out.print("Choose an option: ");
+
+        int choice = scanner.nextInt();
+        scanner.nextLine(); // Consume newline
+
+        switch (choice) {
+            case 1:
+                createQuiz();
+                break;
+            case 2:
+                viewQuizzes();
+                break;
+            case 3:
+                addQuestionToQuiz();
+                break;
+            case 4:
+                viewQuizResults();
+                break;
+            case 5:
+                logout();
+                break;
+            default:
+                System.out.println("Invalid option!");
+        }
+    }
+
+    private void showUserMenu() {
+        System.out.println("\n=== User Menu ===");
+        System.out.println("1. View Available Quizzes");
+        System.out.println("2. Take Quiz");
+        System.out.println("3. View My Results");
+        System.out.println("4. Logout");
+        System.out.print("Choose an option: ");
+
+        int choice = scanner.nextInt();
+        scanner.nextLine(); // Consume newline
+
+        switch (choice) {
+            case 1:
+                viewQuizzes();
+                break;
+            case 2:
+                takeQuiz();
+                break;
+            case 3:
+                viewMyResults();
+                break;
+            case 4:
+                logout();
+                break;
+            default:
+                System.out.println("Invalid option!");
+        }
+    }
+
+    private void login() {
+        System.out.print("Username: ");
+        String username = scanner.nextLine();
+        System.out.print("Password: ");
+        String password = scanner.nextLine();
+
+        for (User user : users) {
+            if (user.getUsername().equals(username) && user.getPassword().equals(password)) {
+                currentUser = user;
+                System.out.println("Login successful!");
+                return;
+            }
+        }
+        System.out.println("Invalid credentials!");
+    }
+
+    private void register() {
+        System.out.print("Username: ");
+        String username = scanner.nextLine();
+        System.out.print("Password: ");
+        String password = scanner.nextLine();
+
+        // Check if username already exists
+        for (User user : users) {
+            if (user.getUsername().equals(username)) {
+                System.out.println("Username already exists!");
+                return;
+            }
+        }
+
+        users.add(new User(username, password, false));
+        System.out.println("Registration successful!");
+    }
+
+    private void logout() {
+        currentUser = null;
+        System.out.println("Logged out successfully!");
+    }
+
+    private void createQuiz() {
+        System.out.print("Quiz Title: ");
+        String title = scanner.nextLine();
+        System.out.print("Description: ");
+        String description = scanner.nextLine();
+        System.out.print("Instructions: ");
+        String instructions = scanner.nextLine();
+        System.out.print("Immediate Scoring (true/false): ");
+        boolean immediateScoring = scanner.nextBoolean();
+
+        Quiz quiz = new Quiz(title, description, instructions, immediateScoring);
+        quizzes.add(quiz);
+        System.out.println("Quiz created successfully!");
+    }
+
+    private void addQuestionToQuiz() {
+        if (quizzes.isEmpty()) {
+            System.out.println("No quizzes available!");
+            return;
+        }
+
+        viewQuizzes();
+        System.out.print("Enter quiz number: ");
+        int quizIndex = scanner.nextInt();
+        scanner.nextLine(); // Consume newline
+
+        if (quizIndex < 1 || quizIndex > quizzes.size()) {
+            System.out.println("Invalid quiz number!");
+            return;
+        }
+
+        Quiz quiz = quizzes.get(quizIndex - 1);
+
+        System.out.println("\nQuestion Type:");
+        System.out.println("1. Multiple Choice");
+        System.out.println("2. True/False");
+        System.out.println("3. Short Answer");
+        System.out.print("Choose type: ");
+        int type = scanner.nextInt();
+        scanner.nextLine(); // Consume newline
+
+        System.out.print("Question text: ");
+        String questionText = scanner.nextLine();
+        
+        List<String> options = new ArrayList<>();
+        String correctAnswer;
+
+        switch (type) {
+            case 1: // MCQ
+                System.out.print("Number of options: ");
+                int optionCount = scanner.nextInt();
+                scanner.nextLine(); // Consume newline
+                
+                for (int i = 0; i < optionCount; i++) {
+                    System.out.print("Option " + (i + 1) + ": ");
+                    options.add(scanner.nextLine());
+                }
+                
+                System.out.print("Correct answer (enter the option number): ");
+                int correct = scanner.nextInt();
+                correctAnswer = options.get(correct - 1);
+                break;
+
+            case 2: // True/False
+                options.add("True");
+                options.add("False");
+                System.out.print("Correct answer (True/False): ");
+                correctAnswer = scanner.nextLine();
+                break;
+
+            case 3: // Short Answer
+                correctAnswer = "Short Answer"; // For simplicity, not implementing short answer checking
+                break;
+
+            default:
+                System.out.println("Invalid question type!");
+                return;
+        }
+
+        System.out.print("Score: ");
+        int score = scanner.nextInt();
+        System.out.print("Time limit in seconds (0 for no limit): ");
+        int timeLimit = scanner.nextInt();
+
+        Question question = new Question(questionText, options, correctAnswer, 
+                                          (type == 1) ? "MCQ" : (type == 2) ? "TRUE_FALSE" : "SHORT_ANSWER", 
+                                          score, timeLimit);
+        quiz.addQuestion(question);
+        System.out.println("Question added successfully!");
+    }
+
+    private void viewQuizzes() {
+        if (quizzes.isEmpty()) {
+            System.out.println("No quizzes available!");
+            return;
+        }
+
+        System.out.println("\n=== Available Quizzes ===");
+        for (int i = 0; i < quizzes.size(); i++) {
+            Quiz quiz = quizzes.get(i);
+            System.out.println((i + 1) + ". " + quiz.getTitle());
+        }
+    }
+
+    private void takeQuiz() {
+        if (quizzes.isEmpty()) {
+            System.out.println("No quizzes available!");
+            return;
+        }
+
+        viewQuizzes();
+        System.out.print("Enter quiz number to take: ");
+        int quizIndex = scanner.nextInt();
+        scanner.nextLine(); // Consume newline
+
+        if (quizIndex < 1 || quizIndex > quizzes.size()) {
+            System.out.println("Invalid quiz number!");
+            return;
+        }
+
+        Quiz quiz = quizzes.get(quizIndex - 1);
+        QuizAttempt quizAttempt = new QuizAttempt(quiz);
+
+        for (Question question : quiz.getQuestions()) {
+            System.out.println("\n" + question.getQuestionText());
+            if (question.getType().equals("MCQ")) {
+                for (int i = 0; i < question.getOptions().size(); i++) {
+                    System.out.println((i + 1) + ". " + question.getOptions().get(i));
+                }
+                System.out.print("Your answer (enter option number): ");
+                int answerIndex = scanner.nextInt();
+                scanner.nextLine(); // Consume newline
+                quizAttempt.getUserAnswers().add(question.getOptions().get(answerIndex - 1));
+            } else if (question.getType().equals("TRUE_FALSE")) {
+                System.out.print("Your answer (True/False): ");
+                String answer = scanner.nextLine();
+                quizAttempt.getUserAnswers().add(answer);
+            } else {
+                System.out.print("Your answer: ");
+                String answer = scanner.nextLine();
+                quizAttempt.getUserAnswers().add(answer);
+            }
+        }
+
+        // Calculate score
+        int score = 0;
+        for (int i = 0; i < quiz.getQuestions().size(); i++) {
+            Question question = quiz.getQuestions().get(i);
+            String userAnswer = quizAttempt.getUserAnswers().get(i);
+            if (userAnswer.equals(question.getCorrectAnswer())) {
+                score += question.getScore();
+            }
+        }
+
+        quizAttempt.setScore(score);
+        quizAttempt.setCompleted(true);
+        currentUser.getQuizAttempts().add(quizAttempt);
+        System.out.println("Quiz completed! Your score: " + score);
+    }
+
+    private void viewQuizResults() {
+        if (currentUser.getQuizAttempts().isEmpty()) {
+            System.out.println("No quiz attempts found!");
+            return;
+        }
+
+        System.out.println("\n=== Quiz Results ===");
+        for (QuizAttempt attempt : currentUser.getQuizAttempts()) {
+            System.out.println("\nQuiz: " + attempt.getQuiz().getTitle());
+            System.out.println("Score: " + attempt.getScore());
+            System.out.println("Completed: " + (attempt.isCompleted() ? "Yes" : "No"));
+        }
+    }
+
+    private void viewMyResults() {
+        if (currentUser.getQuizAttempts().isEmpty()) {
+            System.out.println("No quiz attempts found!");
+            return;
+        }
+
+        System.out.println("\n=== My Quiz Results ===");
+        for (QuizAttempt attempt : currentUser.getQuizAttempts()) {
+            System.out.println("\nQuiz: " + attempt.getQuiz().getTitle());
+            System.out.println("Score: " + attempt.getScore());
+            System.out.println("Completed: " + (attempt.isCompleted() ? "Yes" : "No"));
+        }
+    }
+
+    public static void main(String[] args) {
+        new QuizSystem().start();
+    }
+}
